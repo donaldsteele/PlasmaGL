@@ -20,11 +20,11 @@ A Windows screensaver that renders GPU-driven effects using OpenGL 3.3 Core shad
 ## Features
 
 - **GPU-rendered effects** – the CPU only ticks a timer and pushes uniforms; all pixel work happens in GLSL
-- **Six built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, and Fractal Pyramid
+- **Seven built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, Fractal Pyramid, and Neon Fractal
 - **User shader library** – write custom fragment shaders, save them as named presets, and select them at runtime
 - **Live Shader Editor** – split-pane editor with a real-time GLControl preview; auto-compiles after a 1.5-second debounce, or on-demand with the Compile button
 - **Screenshots** – press F12 at any time to save a render to `Pictures\PlasmaGL` without interrupting the screensaver
-- **9 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
+- **10 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
 - **Multi-monitor** – spawns a full-screen window per display
 - **60-second seed rotation** – quietly randomises plasma parameters every minute for variety
 
@@ -96,6 +96,7 @@ All built-in shaders accept the same uniform set (see [Writing a Custom Shader](
 | **Fire** | Upward-rising fractal Brownian motion (5-octave fBm) mapped to a black→red→orange→yellow→white flame gradient |
 | **Wave Interference** | Full-screen multi-wave interference pattern with dynamic zoom powered by seed uniforms |
 | **Fractal Pyramid** | Raymarched 3D fractal structure that rotates and morphs over time |
+| **Neon Fractal** | Psychedelic glowing rings that iterate fractally from the center |
 
 ### User Shaders
 
@@ -165,6 +166,7 @@ Selectable via the Settings dialog. The `palette` uniform is passed to every sha
 | 6 | Sunset | 5-colour weighted cosine blend: indigo/purple/magenta/orange/gold |
 | 7 | Tropical | 4-segment hard colours: cyan/teal/lime/yellow-green |
 | 8 | Cyberpunk | Linear mix from cyan-blue to magenta |
+| 9 | Neon Ice | Cosine cycle with `vec3(0.263, 0.416, 0.557)` offset |
 
 ---
 

@@ -37,7 +37,7 @@ Public Class SettingsForm : Inherits Form
         cmbPal.Items.AddRange({
             "RGB cycle (acid)", "Green only", "Red only", "Blue only",
             "Yellow-Orange-Red", "Cool vivid", "Sunset", "Tropical",
-            "Cyberpunk"
+            "Cyberpunk", "Neon Ice"
         })
 
         BuildLayout()

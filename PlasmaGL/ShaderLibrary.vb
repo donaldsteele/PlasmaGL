@@ -23,7 +23,7 @@ Friend Module ShaderLibrary
 
     ''' <summary>Display-ordered list of built-in shader names.</summary>
     Public ReadOnly BuiltInNames As String() = {
-        "Plasma (default)", "Ripple", "Voronoi Cells", "Fire", "Wave Interference", "Fractal Pyramid"
+        "Plasma (default)", "Ripple", "Voronoi Cells", "Fire", "Wave Interference", "Fractal Pyramid", "Neon Fractal"
     }
 
     ''' <summary>Shared vertex shader used by every shader in the library.</summary>
@@ -124,6 +124,7 @@ Friend Module ShaderLibrary
             Case "Fire" : Return FireFrag
             Case "Wave Interference" : Return WaveInterferenceFrag
             Case "Fractal Pyramid" : Return FractalPyramidFrag
+            Case "Neon Fractal" : Return NeonFractalFrag
             Case Else : Return PlasmaFrag
         End Select
     End Function
@@ -163,6 +164,7 @@ Friend Module ShaderLibrary
         "        vec3 c=(sg==0?c0:(sg==1?c1:(sg==2?c2:c3))); return c*c;" & vbLf &
         "    }" & vbLf &
         "    if (pal == 8) return mix(vec3(0.2,0.7,0.9), vec3(1.0,0.0,1.0), p);" & vbLf &
+        "    if (pal == 9) return 0.5 + 0.5*cos(phase + p*6.28318 + vec3(1.652, 2.614, 3.500));" & vbLf &
         "    return vec3(0.0, 0.0, 0.5+0.5*cos(phase+p*6.28318));" & vbLf &
         "}" & vbLf &
         "" & vbLf
@@ -368,6 +370,31 @@ Friend Module ShaderLibrary
         "    vec3 rd = normalize(uuv - ro);" & vbLf &
         "    vec4 col = rm(ro, rd);" & vbLf &
         "    fragColor = vec4(col.rgb, 1.0);" & vbLf &
+        "}"
+
+    Private ReadOnly NeonFractalFrag As String =
+        "#version 330 core" & vbLf &
+        "out vec4 fragColor;" & vbLf &
+        "uniform float iTime;" & vbLf &
+        "uniform vec2  iResolution;" & vbLf &
+        "uniform float seed1, seed2, scale, phase;" & vbLf &
+        "uniform int   palette;" & vbLf &
+        "" & vbLf &
+        PaletteGLSL &
+        "void main() {" & vbLf &
+        "    vec2 uv = (gl_FragCoord.xy * 2.0 - iResolution.xy) / iResolution.y;" & vbLf &
+        "    vec2 uv0 = uv;" & vbLf &
+        "    vec3 finalColor = vec3(0.0);" & vbLf &
+        "    for (float i = 0.0; i < 4.0; i++) {" & vbLf &
+        "        uv = fract(uv * 1.5) - 0.5;" & vbLf &
+        "        float d = length(uv) * exp(-length(uv0));" & vbLf &
+        "        vec3 col = getPalette(length(uv0) + i*0.4, iTime * 0.4 * 6.28318, palette);" & vbLf &
+        "        d = sin(d*8.0 + iTime)/8.0;" & vbLf &
+        "        d = abs(d);" & vbLf &
+        "        d = pow(0.01 / d, 1.2);" & vbLf &
+        "        finalColor += col * d;" & vbLf &
+        "    }" & vbLf &
+        "    fragColor = vec4(finalColor, 1.0);" & vbLf &
         "}"
 
 End Module
