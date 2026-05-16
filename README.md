@@ -20,11 +20,11 @@ A Windows screensaver that renders GPU-driven effects using OpenGL 3.3 Core shad
 ## Features
 
 - **GPU-rendered effects** – the CPU only ticks a timer and pushes uniforms; all pixel work happens in GLSL
-- **Four built-in shaders** – Plasma, Ripple, Voronoi Cells, and Fire
+- **Six built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, and Fractal Pyramid
 - **User shader library** – write custom fragment shaders, save them as named presets, and select them at runtime
 - **Live Shader Editor** – split-pane editor with a real-time GLControl preview; auto-compiles after a 1.5-second debounce, or on-demand with the Compile button
 - **Screenshots** – press F12 at any time to save a render to `Pictures\PlasmaGL` without interrupting the screensaver
-- **8 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
+- **9 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
 - **Multi-monitor** – spawns a full-screen window per display
 - **60-second seed rotation** – quietly randomises plasma parameters every minute for variety
 
@@ -86,7 +86,7 @@ The compiled `.exe` must be **renamed to `.scr`** and placed in `C:\Windows\Syst
 
 ### Built-in Shaders
 
-All four shaders accept the same uniform set (see [Writing a Custom Shader](#writing-a-custom-shader) below).
+All built-in shaders accept the same uniform set (see [Writing a Custom Shader](#writing-a-custom-shader) below).
 
 | Name | Description |
 |---|---|
@@ -94,6 +94,8 @@ All four shaders accept the same uniform set (see [Writing a Custom Shader](#wri
 | **Ripple** | Concentric rings expanding from centre with angular wobble driven by `seed1`/`seed2` |
 | **Voronoi Cells** | Animated Voronoi diagram with white cell borders and cosine colour mapping |
 | **Fire** | Upward-rising fractal Brownian motion (5-octave fBm) mapped to a black→red→orange→yellow→white flame gradient |
+| **Wave Interference** | Full-screen multi-wave interference pattern with dynamic zoom powered by seed uniforms |
+| **Fractal Pyramid** | Raymarched 3D fractal structure that rotates and morphs over time |
 
 ### User Shaders
 
@@ -162,6 +164,7 @@ Selectable via the Settings dialog. The `palette` uniform is passed to every sha
 | 5 | Cool Vivid | 4-keyframe interpolation: cyan → green → blue → violet |
 | 6 | Sunset | 5-colour weighted cosine blend: indigo/purple/magenta/orange/gold |
 | 7 | Tropical | 4-segment hard colours: cyan/teal/lime/yellow-green |
+| 8 | Cyberpunk | Linear mix from cyan-blue to magenta |
 
 ---
 

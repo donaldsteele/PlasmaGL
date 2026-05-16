@@ -23,7 +23,7 @@ Friend Module ShaderLibrary
 
     ''' <summary>Display-ordered list of built-in shader names.</summary>
     Public ReadOnly BuiltInNames As String() = {
-        "Plasma (default)", "Ripple", "Voronoi Cells", "Fire"
+        "Plasma (default)", "Ripple", "Voronoi Cells", "Fire", "Wave Interference", "Fractal Pyramid"
     }
 
     ''' <summary>Shared vertex shader used by every shader in the library.</summary>
@@ -122,6 +122,8 @@ Friend Module ShaderLibrary
             Case "Ripple" : Return RippleFrag
             Case "Voronoi Cells" : Return VoronoiFrag
             Case "Fire" : Return FireFrag
+            Case "Wave Interference" : Return WaveInterferenceFrag
+            Case "Fractal Pyramid" : Return FractalPyramidFrag
             Case Else : Return PlasmaFrag
         End Select
     End Function
@@ -160,6 +162,7 @@ Friend Module ShaderLibrary
         "        vec3 c0=vec3(0,1,1),c1=vec3(0,0.8,0.6),c2=vec3(0,0.9,0.3),c3=vec3(0.4,1,0);" & vbLf &
         "        vec3 c=(sg==0?c0:(sg==1?c1:(sg==2?c2:c3))); return c*c;" & vbLf &
         "    }" & vbLf &
+        "    if (pal == 8) return mix(vec3(0.2,0.7,0.9), vec3(1.0,0.0,1.0), p);" & vbLf &
         "    return vec3(0.0, 0.0, 0.5+0.5*cos(phase+p*6.28318));" & vbLf &
         "}" & vbLf &
         "" & vbLf
@@ -283,6 +286,88 @@ Friend Module ShaderLibrary
         "    float fire = clamp(n*strength,0.0,1.0);" & vbLf &
         "    vec3 col = getPalette(fire, phase, palette);" & vbLf &
         "    fragColor = vec4(col,1.0);" & vbLf &
+        "}"
+
+    Private ReadOnly WaveInterferenceFrag As String =
+        "#version 330 core" & vbLf &
+        "out vec4 fragColor;" & vbLf &
+        "uniform float iTime;" & vbLf &
+        "uniform vec2  iResolution;" & vbLf &
+        "uniform float seed1, seed2, scale, phase;" & vbLf &
+        "uniform int   palette;" & vbLf &
+        "" & vbLf &
+        "#define PI 3.14159" & vbLf &
+        "" & vbLf &
+        PaletteGLSL &
+        "void main() {" & vbLf &
+        "    vec2 uv = (gl_FragCoord.yx - 0.5*iResolution.yx) / min(iResolution.x, iResolution.y);" & vbLf &
+        "    float time = 2.0 * PI * (iTime / 2.5);" & vbLf &
+        "    float total = 0.0;" & vbLf &
+        "    float zoom = 1.0 + 0.4 * sin(iTime * 0.1 * seed1) + 0.3 * cos(iTime * 0.15 * seed2);" & vbLf &
+        "    float sc = max(scale * 4.0 * zoom, 10.0);" & vbLf &
+        "    for (int i = 0; i < 7; i++) {" & vbLf &
+        "        float angle = PI * float(i) / 7.0;" & vbLf &
+        "        float len = dot(uv, vec2(cos(angle), sin(angle)));" & vbLf &
+        "        total += (cos(2.0 * sc * len + time) + 1.0) / 2.0;" & vbLf &
+        "    }" & vbLf &
+        "    float p = 1.0 - abs(2.0 * fract(0.5 * total) - 1.0);" & vbLf &
+        "    vec3 col = getPalette(p, phase, palette);" & vbLf &
+        "    fragColor = vec4(col, 1.0);" & vbLf &
+        "}"
+
+    Private ReadOnly FractalPyramidFrag As String =
+        "#version 330 core" & vbLf &
+        "out vec4 fragColor;" & vbLf &
+        "uniform float iTime;" & vbLf &
+        "uniform vec2  iResolution;" & vbLf &
+        "uniform float seed1, seed2, scale, phase;" & vbLf &
+        "uniform int   palette;" & vbLf &
+        "" & vbLf &
+        PaletteGLSL &
+        "vec2 rotate(vec2 p, float a) {" & vbLf &
+        "    float c = cos(a);" & vbLf &
+        "    float s = sin(a);" & vbLf &
+        "    return p * mat2(c, s, -s, c);" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float map(vec3 p) {" & vbLf &
+        "    for (int i = 0; i < 8; ++i) {" & vbLf &
+        "        float t = iTime * 0.2;" & vbLf &
+        "        p.xz = rotate(p.xz, t);" & vbLf &
+        "        p.xy = rotate(p.xy, t * 1.89);" & vbLf &
+        "        p.xz = abs(p.xz);" & vbLf &
+        "        p.xz -= 0.5;" & vbLf &
+        "    }" & vbLf &
+        "    return dot(sign(p), p) / 5.0;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "vec4 rm(vec3 ro, vec3 rd) {" & vbLf &
+        "    float t = 0.0;" & vbLf &
+        "    vec3 col = vec3(0.0);" & vbLf &
+        "    float d;" & vbLf &
+        "    for (float i = 0.0; i < 64.0; i++) {" & vbLf &
+        "        vec3 p = ro + rd * t;" & vbLf &
+        "        d = map(p) * 0.5;" & vbLf &
+        "        if (d < 0.02) break;" & vbLf &
+        "        if (d > 100.0) break;" & vbLf &
+        "        col += getPalette(length(p) * 0.1, phase, palette) / (400.0 * d);" & vbLf &
+        "        t += d;" & vbLf &
+        "    }" & vbLf &
+        "    return vec4(col, 1.0 / (d * 100.0));" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "void main() {" & vbLf &
+        "    vec2 uv = (gl_FragCoord.xy - (iResolution.xy / 2.0)) / iResolution.x;" & vbLf &
+        "    float z = -50.0 + (scale - 30.0) * 0.5;" & vbLf &
+        "    vec3 ro = vec3(0.0, 0.0, z);" & vbLf &
+        "    ro.xz = rotate(ro.xz, iTime);" & vbLf &
+        "    vec3 cf = normalize(-ro);" & vbLf &
+        "    vec3 cs = normalize(cross(cf, vec3(0.0, 1.0, 0.0)));" & vbLf &
+        "    vec3 cu = normalize(cross(cf, cs));" & vbLf &
+        "    vec3 uuv = ro + cf * 3.0 + uv.x * cs + uv.y * cu;" & vbLf &
+        "    vec3 rd = normalize(uuv - ro);" & vbLf &
+        "    vec4 col = rm(ro, rd);" & vbLf &
+        "    fragColor = vec4(col.rgb, 1.0);" & vbLf &
         "}"
 
 End Module
