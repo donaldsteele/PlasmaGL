@@ -1,0 +1,93 @@
+##############################################
+# PlasmaGL – Visual Basic .NET / .NET Framework 4.8
+# Visual Studio 2022 + NuGet packages.config
+##############################################
+
+# -----------------------------------------------
+# Visual Studio IDE files
+# -----------------------------------------------
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Auto-generated designer / code-gen files kept
+# out of source control (regenerated on build)
+# NOTE: My Project\*.Designer.vb are auto-generated;
+# keep them if your project requires them in VCS.
+
+# -----------------------------------------------
+# Build outputs
+# -----------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.xml                  # XML doc files emitted by compiler (PlasmaGL.xml)
+
+# -----------------------------------------------
+# NuGet – packages.config style (old-style restore)
+# The /packages folder is restored from packages.config,
+# so it should NOT be committed.
+# -----------------------------------------------
+packages/
+*.nupkg
+*.snupkg
+
+# NuGet v3+ cache / lock files
+project.lock.json
+project.assets.json
+packages.lock.json
+
+# -----------------------------------------------
+# .NET / MSBuild
+# -----------------------------------------------
+*.dll.config           # e.g. OpenTK.dll.config – keep if you edit it; remove this line if so
+*.Cache
+publish/
+PublishProfiles/
+FakesAssemblies/
+
+# -----------------------------------------------
+# Visual Studio crash / test / coverage files
+# -----------------------------------------------
+*.aps
+*.pch
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+TestResults/
+*.coverage
+*.coveragexml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+*.UpgradeLog.htm
+
+# -----------------------------------------------
+# Windows OS artifacts
+# -----------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# -----------------------------------------------
+# Temporary / editor swap files
+# -----------------------------------------------
+*.tmp
+*.temp
+*~
+*.bak
+*.swp
+*.orig
+*.rej
+/PlasmaGL/CLAUDE.md
