@@ -119,16 +119,50 @@ Friend Module ShaderLibrary
     Private Function GetBuiltInSource(name As String) As String
         Select Case name
             Case "Plasma (default)" : Return PlasmaFrag
-            Case "Ripple"           : Return RippleFrag
-            Case "Voronoi Cells"    : Return VoronoiFrag
-            Case "Fire"             : Return FireFrag
-            Case Else               : Return PlasmaFrag
+            Case "Ripple" : Return RippleFrag
+            Case "Voronoi Cells" : Return VoronoiFrag
+            Case "Fire" : Return FireFrag
+            Case Else : Return PlasmaFrag
         End Select
     End Function
 
     ' ============================================================
     '  BUILT-IN GLSL FRAGMENT SOURCES
     ' ============================================================
+
+    Private ReadOnly PaletteGLSL As String =
+        "vec3 getPalette(float p, float phase, int pal) {" & vbLf &
+        "    if (pal == 0) return 0.5 + 0.5*cos(phase + p*6.28 + vec3(0,2.1,4.2));" & vbLf &
+        "    if (pal == 2) return vec3(0.5+0.5*cos(phase+p*6.28318), 0.0, 0.0);" & vbLf &
+        "    if (pal == 1) return vec3(0.0, 0.5+0.5*cos(phase+p*6.28318), 0.0);" & vbLf &
+        "    if (pal == 4) {" & vbLf &
+        "        float a=phase+p*6.28318; vec3 c = clamp(vec3(0.9+0.4*cos(a), 0.5+0.5*cos(a-1.05), 0.0),0.0,1.0);" & vbLf &
+        "        return c*c;" & vbLf &
+        "    }" & vbLf &
+        "    if (pal == 5) {" & vbLf &
+        "        float a=phase+p*6.28318; float s=a*2.0/3.14159; int i=int(floor(s))&3; float f=s-floor(s);" & vbLf &
+        "        vec3 c0=vec3(0,1,1),c1=vec3(0,1,0),c2=vec3(0,0,1),c3=vec3(0.5,0,1);" & vbLf &
+        "        vec3 now=i==0?c0:(i==1?c1:(i==2?c2:c3));" & vbLf &
+        "        vec3 nxt=i==3?c0:(i==0?c1:(i==1?c2:c3));" & vbLf &
+        "        vec3 c = mix(now,nxt,f); return c*c;" & vbLf &
+        "    }" & vbLf &
+        "    if (pal == 6) {" & vbLf &
+        "        float a=phase+p*6.28318;" & vbLf &
+        "        vec3 c1=vec3(0.20,0.00,0.60),c2=vec3(0.50,0.00,1.00),c3=vec3(1.00,0.20,0.60);" & vbLf &
+        "        vec3 c4=vec3(1.00,0.50,0.00),c5=vec3(1.00,0.80,0.00);" & vbLf &
+        "        float w1=0.5+0.5*cos(a),w2=0.5+0.5*cos(a-1.2566),w3=0.5+0.5*cos(a-2.5133);" & vbLf &
+        "        float w4=0.5+0.5*cos(a-3.7699),w5=0.5+0.5*cos(a-5.0265);" & vbLf &
+        "        vec3 c=clamp((w1*c1+w2*c2+w3*c3+w4*c4+w5*c5)/(w1+w2+w3+w4+w5),0.0,1.0);" & vbLf &
+        "        return c*c;" & vbLf &
+        "    }" & vbLf &
+        "    if (pal == 7) {" & vbLf &
+        "        float a=phase+p*6.28318; int sg=int(floor(a*4.0/6.28318))&3;" & vbLf &
+        "        vec3 c0=vec3(0,1,1),c1=vec3(0,0.8,0.6),c2=vec3(0,0.9,0.3),c3=vec3(0.4,1,0);" & vbLf &
+        "        vec3 c=(sg==0?c0:(sg==1?c1:(sg==2?c2:c3))); return c*c;" & vbLf &
+        "    }" & vbLf &
+        "    return vec3(0.0, 0.0, 0.5+0.5*cos(phase+p*6.28318));" & vbLf &
+        "}" & vbLf &
+        "" & vbLf
 
     Private ReadOnly PlasmaFrag As String =
         "#version 330 core" & vbLf &
@@ -138,6 +172,7 @@ Friend Module ShaderLibrary
         "uniform float seed1, seed2, scale, phase;" & vbLf &
         "uniform int   palette;" & vbLf &
         "" & vbLf &
+        PaletteGLSL &
         "vec2 lens(vec2 uv, float t) {" & vbLf &
         "    float x = uv.x + 0.08*sin(uv.y*6.0+t*0.7) + 0.01*sin(uv.y*9.0-t*0.5);" & vbLf &
         "    float y = uv.y + 0.08*sin(uv.x*6.0+t*0.6) + 0.01*sin(uv.x*9.0-t*0.4);" & vbLf &
@@ -159,38 +194,7 @@ Friend Module ShaderLibrary
         "    vec2 uv = gl_FragCoord.xy / iResolution.xy;" & vbLf &
         "    uv = lens(uv, iTime);" & vbLf &
         "    float p = plasma(uv);" & vbLf &
-        "    vec3 col;" & vbLf &
-        "    if (palette == 0) {" & vbLf &
-        "        col = 0.5 + 0.5*cos(phase + p*6.28 + vec3(0,2.1,4.2));" & vbLf &
-        "    } else if (palette == 2) {" & vbLf &
-        "        col = vec3(0.5+0.5*cos(phase+p*6.28318), 0.0, 0.0);" & vbLf &
-        "    } else if (palette == 1) {" & vbLf &
-        "        col = vec3(0.0, 0.5+0.5*cos(phase+p*6.28318), 0.0);" & vbLf &
-        "    } else if (palette == 4) {" & vbLf &
-        "        float a=phase+p*6.28318;" & vbLf &
-        "        col = clamp(vec3(0.9+0.4*cos(a), 0.5+0.5*cos(a-1.05), 0.0),0.0,1.0);" & vbLf &
-        "        col = col*col;" & vbLf &
-        "    } else if (palette == 5) {" & vbLf &
-        "        float a=phase+p*6.28318; float s=a*2.0/3.14159; int i=int(floor(s))&3; float f=s-floor(s);" & vbLf &
-        "        vec3 c0=vec3(0,1,1),c1=vec3(0,1,0),c2=vec3(0,0,1),c3=vec3(0.5,0,1);" & vbLf &
-        "        vec3 now=i==0?c0:(i==1?c1:(i==2?c2:c3));" & vbLf &
-        "        vec3 nxt=i==3?c0:(i==0?c1:(i==1?c2:c3));" & vbLf &
-        "        col = mix(now,nxt,f)*mix(now,nxt,f);" & vbLf &
-        "    } else if (palette == 6) {" & vbLf &
-        "        float a=phase+p*6.28318;" & vbLf &
-        "        vec3 c1=vec3(0.20,0.00,0.60),c2=vec3(0.50,0.00,1.00),c3=vec3(1.00,0.20,0.60);" & vbLf &
-        "        vec3 c4=vec3(1.00,0.50,0.00),c5=vec3(1.00,0.80,0.00);" & vbLf &
-        "        float w1=0.5+0.5*cos(a),w2=0.5+0.5*cos(a-1.2566),w3=0.5+0.5*cos(a-2.5133);" & vbLf &
-        "        float w4=0.5+0.5*cos(a-3.7699),w5=0.5+0.5*cos(a-5.0265);" & vbLf &
-        "        col=clamp((w1*c1+w2*c2+w3*c3+w4*c4+w5*c5)/(w1+w2+w3+w4+w5),0.0,1.0);" & vbLf &
-        "        col=col*col;" & vbLf &
-        "    } else if (palette == 7) {" & vbLf &
-        "        float a=phase+p*6.28318; int sg=int(floor(a*4.0/6.28318))&3;" & vbLf &
-        "        vec3 c0=vec3(0,1,1),c1=vec3(0,0.8,0.6),c2=vec3(0,0.9,0.3),c3=vec3(0.4,1,0);" & vbLf &
-        "        col=(sg==0?c0:(sg==1?c1:(sg==2?c2:c3))); col=col*col;" & vbLf &
-        "    } else {" & vbLf &
-        "        col = vec3(0.0, 0.0, 0.5+0.5*cos(phase+p*6.28318));" & vbLf &
-        "    }" & vbLf &
+        "    vec3 col = getPalette(p, phase, palette);" & vbLf &
         "    fragColor = vec4(col, 1.0);" & vbLf &
         "}"
 
@@ -202,6 +206,7 @@ Friend Module ShaderLibrary
         "uniform float seed1, seed2, scale, phase;" & vbLf &
         "uniform int   palette;" & vbLf &
         "" & vbLf &
+        PaletteGLSL &
         "void main() {" & vbLf &
         "    vec2 uv = (gl_FragCoord.xy - iResolution*0.5) / min(iResolution.x,iResolution.y);" & vbLf &
         "    float r = length(uv);" & vbLf &
@@ -211,7 +216,7 @@ Friend Module ShaderLibrary
         "            + 0.6*sin(r/(sc*max(seed1*0.5,0.1)) - phase*1.7 + a*2.0)" & vbLf &
         "            + 0.3*sin(r/(sc*max(seed2*0.3,0.1)) + a*seed1    - phase*1.2);" & vbLf &
         "    float p = clamp(0.5 + 0.26*v, 0.0, 1.0);" & vbLf &
-        "    vec3 col = 0.5 + 0.5*cos(phase + p*6.28318 + vec3(0.0,2.094,4.188));" & vbLf &
+        "    vec3 col = getPalette(p, phase, palette);" & vbLf &
         "    fragColor = vec4(col, 1.0);" & vbLf &
         "}"
 
@@ -223,6 +228,7 @@ Friend Module ShaderLibrary
         "uniform float seed1, seed2, scale, phase;" & vbLf &
         "uniform int   palette;" & vbLf &
         "" & vbLf &
+        PaletteGLSL &
         "vec2 hash2(vec2 p) {" & vbLf &
         "    p = vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)));" & vbLf &
         "    return fract(sin(p)*43758.5453);" & vbLf &
@@ -242,7 +248,7 @@ Friend Module ShaderLibrary
         "        if(d<minD){secD=minD;minD=d;} else if(d<secD){secD=d;}" & vbLf &
         "    }" & vbLf &
         "    float border = secD-minD;" & vbLf &
-        "    vec3 col = 0.5+0.5*cos(phase+minD*5.0*seed1+vec3(0.0,2.094,4.188));" & vbLf &
+        "    vec3 col = getPalette((minD*5.0*seed1)/6.28318, phase, palette);" & vbLf &
         "    col = mix(col, vec3(1.0), smoothstep(0.0,0.06,border));" & vbLf &
         "    fragColor = vec4(col,1.0);" & vbLf &
         "}"
@@ -255,6 +261,7 @@ Friend Module ShaderLibrary
         "uniform float seed1, seed2, scale, phase;" & vbLf &
         "uniform int   palette;" & vbLf &
         "" & vbLf &
+        PaletteGLSL &
         "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}" & vbLf &
         "float noise(vec2 p){" & vbLf &
         "    vec2 i=floor(p); vec2 f=fract(p); f=f*f*(3.0-2.0*f);" & vbLf &
@@ -274,10 +281,7 @@ Friend Module ShaderLibrary
         "    float n  = fbm(st+vec2(0.0,-phase*0.4))+0.4*fbm(st*2.2+vec2(0.3,-phase*0.6));" & vbLf &
         "    float strength = pow(clamp(1.0-uv.y,0.0,1.0),1.2)*1.8;" & vbLf &
         "    float fire = clamp(n*strength,0.0,1.0);" & vbLf &
-        "    vec3 col = mix(vec3(0.0),       vec3(0.5,0.0,0.0), smoothstep(0.0, 0.25,fire));" & vbLf &
-        "    col = mix(col,vec3(1.0,0.35,0.0),smoothstep(0.2,  0.5, fire));" & vbLf &
-        "    col = mix(col,vec3(1.0,0.85,0.0),smoothstep(0.45, 0.7, fire));" & vbLf &
-        "    col = mix(col,vec3(1.0,1.0,0.95),smoothstep(0.65, 0.9, fire));" & vbLf &
+        "    vec3 col = getPalette(fire, phase, palette);" & vbLf &
         "    fragColor = vec4(col,1.0);" & vbLf &
         "}"
 
