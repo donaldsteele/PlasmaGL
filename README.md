@@ -189,17 +189,6 @@ Then right-click the desktop → **Personalize → Screen saver** and select **P
 
 ---
 
-## Known Issues / TODOs
-
-- `Form_MouseMove` contains a debug `MsgBox("move")` — **remove before shipping**.
-- `PlasmaForm_MouseClick` contains a debug `MsgBox("click")` — **remove before shipping**.
-- `PlasmaPreview` calls `SwapBuffers()` twice per frame (once inside `RenderOneFrame`, once directly) — the second call is redundant.
-- Palette index `3` (Blue) is handled by the `else` branch in the shader rather than an explicit `palette == 3` check; fragile if palette indices ever shift.
-- `_scale` is randomised in code but `SettingsForm` has no UI control for it; users cannot adjust scale from the dialog.
-- `Form1.vb` is a leftover stub and can be deleted.
-
----
-
 ## License
 
 See [LICENSE](LICENSE).
