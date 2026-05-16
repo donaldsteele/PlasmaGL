@@ -31,6 +31,7 @@ Public Class PlasmaForm : Inherits Form
         DoubleBuffered = True
         BackColor = Color.Black
         Cursor.Hide()
+        KeyPreview = True
 
         NewRandomSeed()
         LoadSettings()
@@ -176,7 +177,33 @@ Public Class PlasmaForm : Inherits Form
     '                       EXIT  HANDLERS
     ' ============================================================
     Private Sub Form_KeyDown(sender As Object, e As KeyEventArgs)
+        If e.KeyCode = Keys.F12 Then
+            SaveScreenshot()
+            Return
+        End If
         Close()
+    End Sub
+
+    Private Sub SaveScreenshot()
+        Try
+            Dim pics = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+            Dim folder = IO.Path.Combine(pics, "PlasmaGL")
+            If Not IO.Directory.Exists(folder) Then IO.Directory.CreateDirectory(folder)
+
+            Dim filename = IO.Path.Combine(folder, "PlasmaGL_" & DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".png")
+
+            Dim bmp As New Bitmap(_gl.Width, _gl.Height)
+            Dim data = bmp.LockBits(New Rectangle(0, 0, _gl.Width, _gl.Height), Imaging.ImageLockMode.WriteOnly, Imaging.PixelFormat.Format32bppArgb)
+
+            GL.ReadPixels(0, 0, _gl.Width, _gl.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0)
+
+            bmp.UnlockBits(data)
+            bmp.RotateFlip(RotateFlipType.RotateNoneFlipY) ' OpenGL Y is bottom-up
+            bmp.Save(filename, Imaging.ImageFormat.Png)
+            bmp.Dispose()
+        Catch ex As Exception
+            ' Silently fail in screensaver mode to prevent crashes
+        End Try
     End Sub
 
     Private Sub InitializeComponent()

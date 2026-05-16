@@ -4,12 +4,26 @@ A Windows screensaver that renders GPU-driven effects using OpenGL 3.3 Core shad
 
 ---
 
+## Gallery
+
+<p align="center">
+  <img src="screenshot/PlasmaGL_20260516_144022.png" width="48%">
+  <img src="screenshot/PlasmaGL_20260516_144058.png" width="48%">
+</p>
+<p align="center">
+  <img src="screenshot/PlasmaGL_20260516_144248.png" width="48%">
+  <img src="screenshot/PlasmaGL_20260516_144342.png" width="48%">
+</p>
+
+---
+
 ## Features
 
 - **GPU-rendered effects** – the CPU only ticks a timer and pushes uniforms; all pixel work happens in GLSL
 - **Four built-in shaders** – Plasma, Ripple, Voronoi Cells, and Fire
 - **User shader library** – write custom fragment shaders, save them as named presets, and select them at runtime
 - **Live Shader Editor** – split-pane editor with a real-time GLControl preview; auto-compiles after a 1.5-second debounce, or on-demand with the Compile button
+- **Screenshots** – press F12 at any time to save a render to `Pictures\PlasmaGL` without interrupting the screensaver
 - **8 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
 - **Multi-monitor** – spawns a full-screen window per display
 - **60-second seed rotation** – quietly randomises plasma parameters every minute for variety
