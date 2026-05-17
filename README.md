@@ -20,11 +20,11 @@ A Windows screensaver that renders GPU-driven effects using OpenGL 3.3 Core shad
 ## Features
 
 - **GPU-rendered effects** – the CPU only ticks a timer and pushes uniforms; all pixel work happens in GLSL
-- **Seven built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, Fractal Pyramid, and Neon Fractal
+- **Nine built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, Fractal Pyramid, Neon Fractal, Starfield, and Fractal Galaxy
 - **User shader library** – write custom fragment shaders, save them as named presets, and select them at runtime
 - **Live Shader Editor** – split-pane editor with a real-time GLControl preview; auto-compiles after a 1.5-second debounce, or on-demand with the Compile button
 - **Screenshots** – press F12 at any time to save a render to `Pictures\PlasmaGL` without interrupting the screensaver
-- **10 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
+- **11 colour palettes** – selectable from the Settings dialog (applies to the built-in Plasma shader)
 - **Multi-monitor** – spawns a full-screen window per display
 - **60-second seed rotation** – quietly randomises plasma parameters every minute for variety
 
@@ -97,6 +97,8 @@ All built-in shaders accept the same uniform set (see [Writing a Custom Shader](
 | **Wave Interference** | Full-screen multi-wave interference pattern with dynamic zoom powered by seed uniforms |
 | **Fractal Pyramid** | Raymarched 3D fractal structure that rotates and morphs over time |
 | **Neon Fractal** | Psychedelic glowing rings that iterate fractally from the center |
+| **Starfield** | Volumetric star field with dynamic nebula-like formations and smooth vignette |
+| **Fractal Galaxy** | Parallax scrolling fractal galaxy with dynamic noise-driven coloration and stars |
 
 ### User Shaders
 
@@ -140,7 +142,7 @@ uniform float seed1;       // random per-axis frequency multiplier (1–5)
 uniform float seed2;       // random per-axis frequency multiplier (1–5)
 uniform float scale;       // blob/pattern scale (2–60)
 uniform float phase;       // same as iTime — drives colour cycling
-uniform int   palette;     // user palette selection (0–7)
+uniform int   palette;     // user palette selection (0–10)
 
 void main() {
     vec2 uv = gl_FragCoord.xy / iResolution.xy;
@@ -167,6 +169,7 @@ Selectable via the Settings dialog. The `palette` uniform is passed to every sha
 | 7 | Tropical | 4-segment hard colours: cyan/teal/lime/yellow-green |
 | 8 | Cyberpunk | Linear mix from cyan-blue to magenta |
 | 9 | Neon Ice | Cosine cycle with `vec3(0.263, 0.416, 0.557)` offset |
+| 10 | Galaxy | Custom nonlinear mapping `vec3(p^3, p^2, p)` for deep cosmic colors |
 
 ---
 
