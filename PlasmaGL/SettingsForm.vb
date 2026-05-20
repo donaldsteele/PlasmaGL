@@ -42,8 +42,8 @@ Public Class SettingsForm : Inherits Form
 
         BuildLayout()
         WireEvents()
-        LoadSettings()
         RefreshShaderList()
+        LoadSettings()
     End Sub
 
     ' ============================================================

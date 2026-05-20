@@ -20,7 +20,7 @@ A Windows screensaver that renders GPU-driven effects using OpenGL 3.3 Core shad
 ## Features
 
 - **GPU-rendered effects** – the CPU only ticks a timer and pushes uniforms; all pixel work happens in GLSL
-- **Nine built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, Fractal Pyramid, Neon Fractal, Starfield, and Fractal Galaxy
+- **Ten built-in shaders** – Plasma, Ripple, Voronoi Cells, Fire, Wave Interference, Fractal Pyramid, Neon Fractal, Starfield, Fractal Galaxy, and Polka Dot
 - **User shader library** – write custom fragment shaders, save them as named presets, and select them at runtime
 - **Live Shader Editor** – split-pane editor with a real-time GLControl preview; auto-compiles after a 1.5-second debounce, or on-demand with the Compile button
 - **Screenshots** – press F12 at any time to save a render to `Pictures\PlasmaGL` without interrupting the screensaver
@@ -99,6 +99,7 @@ All built-in shaders accept the same uniform set (see [Writing a Custom Shader](
 | **Neon Fractal** | Psychedelic glowing rings that iterate fractally from the center |
 | **Starfield** | Volumetric star field with dynamic nebula-like formations and smooth vignette |
 | **Fractal Galaxy** | Parallax scrolling fractal galaxy with dynamic noise-driven coloration and stars |
+| **Polka Dot** | Grid of glowing polka dots with randomized time-varying intensity and preset palette cycling |
 
 ### User Shaders
 

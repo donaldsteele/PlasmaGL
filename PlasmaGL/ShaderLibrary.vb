@@ -23,7 +23,7 @@ Friend Module ShaderLibrary
 
     ''' <summary>Display-ordered list of built-in shader names.</summary>
     Public ReadOnly BuiltInNames As String() = {
-        "Plasma (default)", "Ripple", "Voronoi Cells", "Fire", "Wave Interference", "Fractal Pyramid", "Neon Fractal", "Starfield", "Fractal Galaxy"
+        "Plasma (default)", "Ripple", "Voronoi Cells", "Fire", "Wave Interference", "Fractal Pyramid", "Neon Fractal", "Starfield", "Fractal Galaxy", "Polka Dot"
     }
 
     ''' <summary>Shared vertex shader used by every shader in the library.</summary>
@@ -127,6 +127,7 @@ Friend Module ShaderLibrary
             Case "Neon Fractal" : Return NeonFractalFrag
             Case "Starfield" : Return StarfieldFrag
             Case "Fractal Galaxy" : Return FractalGalaxyFrag
+            Case "Polka Dot" : Return PolkaDotFrag
             Case Else : Return PlasmaFrag
         End Select
     End Function
@@ -138,8 +139,8 @@ Friend Module ShaderLibrary
     Private ReadOnly PaletteGLSL As String =
         "vec3 getPalette(float p, float phase, int pal) {" & vbLf &
         "    if (pal == 0) return 0.5 + 0.5*cos(phase + p*6.28 + vec3(0,2.1,4.2));" & vbLf &
-        "    if (pal == 2) return vec3(0.5+0.5*cos(phase+p*6.28318), 0.0, 0.0);" & vbLf &
-        "    if (pal == 1) return vec3(0.0, 0.5+0.5*cos(phase+p*6.28318), 0.0);" & vbLf &
+        "    if (pal == 2) return (0.5+0.5*cos(phase+p*6.28318)) * vec3(1.0, 0.05, 0.02);" & vbLf &
+        "    if (pal == 1) return (0.5+0.5*cos(phase+p*6.28318)) * vec3(0.02, 1.0, 0.1);" & vbLf &
         "    if (pal == 4) {" & vbLf &
         "        float a=phase+p*6.28318; vec3 c = clamp(vec3(0.9+0.4*cos(a), 0.5+0.5*cos(a-1.05), 0.0),0.0,1.0);" & vbLf &
         "        return c*c;" & vbLf &
@@ -168,7 +169,7 @@ Friend Module ShaderLibrary
         "    if (pal == 8) return mix(vec3(0.2,0.7,0.9), vec3(1.0,0.0,1.0), p);" & vbLf &
         "    if (pal == 9) return 0.5 + 0.5*cos(phase + p*6.28318 + vec3(1.652, 2.614, 3.500));" & vbLf &
         "    if (pal == 10) return vec3(p*p*p, p*p, p);" & vbLf &
-        "    return vec3(0.0, 0.0, 0.5+0.5*cos(phase+p*6.28318));" & vbLf &
+        "    return (0.5+0.5*cos(phase+p*6.28318)) * vec3(0.02, 0.1, 1.0);" & vbLf &
         "}" & vbLf &
         "" & vbLf
 
@@ -539,6 +540,114 @@ Friend Module ShaderLibrary
         "    " & vbLf &
         "    vec3 col1 = getPalette(t, phase, palette);" & vbLf &
         "    fragColor = mix(freqs[3]-0.3, 1.0, v) * vec4(1.5 * freqs[2] * col1.r, 1.2 * freqs[1] * col1.g, freqs[3] * col1.b, 1.0) + c2 + starcolor;" & vbLf &
+        "}"
+
+    Private ReadOnly PolkaDotFrag As String =
+        "#version 330 core" & vbLf &
+        "out vec4 fragColor;" & vbLf &
+        "uniform float iTime;" & vbLf &
+        "uniform vec2  iResolution;" & vbLf &
+        "uniform float seed1, seed2, scale, phase;" & vbLf &
+        "uniform int   palette;" & vbLf &
+        "" & vbLf &
+        PaletteGLSL &
+        "const float Pi = 3.14159265359;" & vbLf &
+        "" & vbLf &
+        "#define clamp01(x) clamp(x, 0.0, 1.0)" & vbLf &
+        "#define mad(x, a, b) ((x) * (a) + (b))" & vbLf &
+        "#define rsqrt(x) inversesqrt(x)" & vbLf &
+        "" & vbLf &
+        "vec3 GammaEncode(vec3 x) { return pow(x, vec3(1.0 / 2.2)); }" & vbLf &
+        "" & vbLf &
+        "float SDFtoMask(float sdf) {" & vbLf &
+        "    return sdf / length(vec2(dFdx(sdf), dFdy(sdf))) * 1.2;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float Hash(float v) {" & vbLf &
+        "    return fract(sin(v) * 43758.5453);" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float Hash(vec2 v) {" & vbLf &
+        "    return Hash(v.y + v.x * 12.9898);" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float Hash(vec3 v) {" & vbLf &
+        "    return Hash(v.y + v.x * 12.9898 + v.z * 33.7311);" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float Pow2(float v) { return v * v; }" & vbLf &
+        "float Pow3(float v) { return v * v * v; }" & vbLf &
+        "float SqrLen(vec2 v) { return dot(v, v); }" & vbLf &
+        "" & vbLf &
+        "float EvalIntensityCurve(vec2 id, float time) {" & vbLf &
+        "    time += Hash(id.yx * 1.733 + seed2);" & vbLf &
+        "    float iTimeVal = floor(time);" & vbLf &
+        "    float fTime = fract(time);" & vbLf &
+        "    float h = Hash(vec3(id, iTimeVal));" & vbLf &
+        "    h *= h;" & vbLf &
+        "    h *= h;" & vbLf &
+        "    float falloff = 1.0 - Pow2(fTime * 2.0 - 1.0);" & vbLf &
+        "    {" & vbLf &
+        "        const float f = 100.0;" & vbLf &
+        "        const float d = 1.0 / (exp2(f) - 1.0);" & vbLf &
+        "        falloff = mad(exp2(falloff * f), d, -d);" & vbLf &
+        "    }" & vbLf &
+        "    return h * falloff;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float GlowKern3(float x, float s) {" & vbLf &
+        "    return s / Pow3(1.0 + s * x);" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float EvalGlow3(vec2 uv, vec2 off, float time) {" & vbLf &
+        "    vec2 iUV = floor(uv) + off;" & vbLf &
+        "    vec2 fUV = fract(uv) - off;" & vbLf &
+        "    vec2 fUV2 = fUV * 2.0 - 1.0;" & vbLf &
+        "    float l = length(fUV2);" & vbLf &
+        "    l = max(0.0, l - 0.7);" & vbLf &
+        "    float glow = GlowKern3(l, 1.2);" & vbLf &
+        "    glow = clamp01(glow);" & vbLf &
+        "    glow *= clamp01(1.0 - Pow2(l * 0.25));" & vbLf &
+        "    return EvalIntensityCurve(iUV.xy, time) * glow;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float PlotDot(vec2 sp, vec2 dp, float dr) {" & vbLf &
+        "    float v = length(sp - dp);" & vbLf &
+        "    float d = v - dr;" & vbLf &
+        "    d /= length(vec2(dFdx(v), dFdy(v)));" & vbLf &
+        "    d = clamp01(1.0 - d * 1.2);" & vbLf &
+        "    return d;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "float EvalGlyph(vec2 uv, vec2 off, float time) {" & vbLf &
+        "    vec2 iUV = floor(uv) + off;" & vbLf &
+        "    vec2 fUV = fract(uv) - off;" & vbLf &
+        "    vec2 fUV2 = fUV * 2.0 - 1.0;" & vbLf &
+        "    float gMask = PlotDot(fUV2, vec2(0.0), 0.75);" & vbLf &
+        "    return EvalIntensityCurve(iUV.xy, time) * gMask;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "vec3 EvalTile(vec2 uv, vec2 off, float time) {" & vbLf &
+        "    vec2 iUV = floor(uv) + off;" & vbLf &
+        "    float glyph = EvalGlyph(uv, off, time);" & vbLf &
+        "    float glow = 0.0;" & vbLf &
+        "    for (float i = -2.0; i <= 2.0; ++i) {" & vbLf &
+        "        for (float j = -2.0; j <= 2.0; ++j) {" & vbLf &
+        "            glow += EvalGlow3(uv, off + vec2(i, j), time);" & vbLf &
+        "        }" & vbLf &
+        "    }" & vbLf &
+        "    float intensity = mix(glow, glyph, 0.94) * 32.0;" & vbLf &
+        "    vec3 baseCol = getPalette(Hash(iUV), phase, palette);" & vbLf &
+        "    return baseCol * intensity;" & vbLf &
+        "}" & vbLf &
+        "" & vbLf &
+        "void main() {" & vbLf &
+        "    float gridScale = max(scale * 0.6, 1.2);" & vbLf &
+        "    vec2 coord = (gl_FragCoord.xy - 0.5 * iResolution.xy) / gridScale;" & vbLf &
+        "    float speed = 0.05 + 0.02 * seed1;" & vbLf &
+        "    float time = iTime * speed;" & vbLf &
+        "    vec3 outCol = EvalTile(coord, vec2(0.0), time);" & vbLf &
+        "    fragColor = vec4(GammaEncode(clamp01(outCol)), 1.0);" & vbLf &
         "}"
 
 End Module
