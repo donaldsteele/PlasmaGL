@@ -1,6 +1,9 @@
 Imports Microsoft.Win32
 Imports System.Drawing
 Imports System.Windows.Forms
+Imports OpenTK
+Imports OpenTK.Graphics.OpenGL
+Imports OpenTK.WinForms
 
 Public Class SettingsForm : Inherits Form
 
@@ -18,6 +21,13 @@ Public Class SettingsForm : Inherits Form
     Private WithEvents btnOK As New Button With {.Text = "OK", .DialogResult = DialogResult.OK}
     Private ReadOnly btnCan As New Button With {.Text = "Cancel", .DialogResult = DialogResult.Cancel}
 
+    ' ── preview section ─────────────────────────────────────────
+    Private _glPreview As GLControl
+    Private _previewForm As PlasmaForm          ' helper that owns shader / VAO / VBO
+    Private ReadOnly _previewTimer As New Timer With {.Interval = 16}
+    Private _previewPhase As Single
+    Private _previewReady As Boolean = False
+
     Public Shared Event SettingsChanged()
 
     ' ============================================================
@@ -29,7 +39,7 @@ Public Class SettingsForm : Inherits Form
         MaximizeBox = False : MinimizeBox = False
         StartPosition = FormStartPosition.CenterScreen
         AcceptButton = btnOK : CancelButton = btnCan
-        ClientSize = New Size(340, 420)
+        ClientSize = New Size(340, 680)
         BackColor = Color.FromArgb(45, 45, 48)
         ForeColor = Color.FromArgb(220, 220, 220)
         Font = New Font("Segoe UI", 9)
@@ -88,15 +98,37 @@ Public Class SettingsForm : Inherits Form
         cmbPal.BackColor = Color.FromArgb(60, 60, 60)
         cmbPal.ForeColor = Color.FromArgb(220, 220, 220)
 
+        ' ── separator 2 ────────────────────────────────────────
+        Dim sep2 As New Panel With {
+            .Left = 10, .Top = 352, .Width = 318, .Height = 1,
+            .BackColor = Color.FromArgb(80, 80, 80)
+        }
+
+        ' ── preview group ───────────────────────────────────────
+        Dim grpPreview As New GroupBox With {
+            .Text = "Preview", .ForeColor = Color.FromArgb(180, 180, 180),
+            .Left = 10, .Top = 360, .Width = 318, .Height = 260
+        }
+
+        _glPreview = New GLControl With {
+            .Left = 8, .Top = 20,
+            .Width = 298, .Height = 230,
+            .VSync = False
+        }
+        _glPreview.BackColor = Color.Black
+
+        grpPreview.Controls.Add(_glPreview)
+
         ' ── ok / cancel ─────────────────────────────────────────
         StyleButton(btnOK, Color.FromArgb(0, 122, 204))
         StyleButton(btnCan, Color.FromArgb(80, 80, 80))
-        btnOK.Left = 144 : btnOK.Top = 378 : btnOK.Width = 88
-        btnCan.Left = 240 : btnCan.Top = 378 : btnCan.Width = 88
+        btnOK.Left = 144 : btnOK.Top = 638 : btnOK.Width = 88
+        btnCan.Left = 240 : btnCan.Top = 638 : btnCan.Width = 88
 
         trkSpeed.BackColor = Color.FromArgb(45, 45, 48)
 
-        Controls.AddRange({grpShader, sep, lblSpeed, trkSpeed, lblPal, cmbPal, btnOK, btnCan})
+        Controls.AddRange({grpShader, sep, lblSpeed, trkSpeed, lblPal, cmbPal,
+                           sep2, grpPreview, btnOK, btnCan})
     End Sub
 
     Private Shared Sub StyleButton(btn As Button, bg As Color)
@@ -142,7 +174,10 @@ Public Class SettingsForm : Inherits Form
     '  WIRE EVENTS
     ' ============================================================
     Private Sub WireEvents()
-        AddHandler lstShaders.SelectedIndexChanged, Sub(s, e) UpdateShaderButtons()
+        AddHandler lstShaders.SelectedIndexChanged, Sub(s, e)
+                                                        UpdateShaderButtons()
+                                                        UpdatePreviewShader()
+                                                    End Sub
         AddHandler lstShaders.DoubleClick, AddressOf OpenEditor
 
         AddHandler btnNew.Click, Sub(s, e)
@@ -169,6 +204,25 @@ Public Class SettingsForm : Inherits Form
                 RefreshShaderList()
             End If
         End Sub
+
+        ' palette change → update preview palette
+        AddHandler cmbPal.SelectedIndexChanged, Sub(s, e)
+                                                    UpdatePreviewPalette()
+                                                End Sub
+
+        ' preview GL setup
+        AddHandler _glPreview.Load, AddressOf PreviewGL_Load
+
+        ' preview animation timer
+        AddHandler _previewTimer.Tick, Sub(s, e)
+                                           If Not _previewReady Then Return
+                                           _previewPhase += 0.025F
+                                           Try
+                                               _previewForm.RenderOneFrame(_glPreview, _previewPhase)
+                                           Catch
+                                               ' Swallow GL errors during shader transitions
+                                           End Try
+                                       End Sub
     End Sub
 
     Private Sub OpenEditor(sender As Object, e As EventArgs)
@@ -189,6 +243,55 @@ Public Class SettingsForm : Inherits Form
                 lstShaders.SelectedIndex = i : Return
             End If
         Next
+    End Sub
+
+    ' ============================================================
+    '  PREVIEW – GL SETUP & UPDATES
+    ' ============================================================
+    Private Sub PreviewGL_Load(sender As Object, e As EventArgs)
+        Try
+            _previewForm = New PlasmaForm()
+            Cursor.Show()   ' PlasmaForm constructor hides the cursor; restore it
+
+            ' Determine which shader to start with
+            Dim entry = SelectedEntry()
+            Dim shaderName = If(entry IsNot Nothing, entry.Name, "Plasma (default)")
+
+            _previewForm.CreateShaders()
+            _previewForm.InitialiseResources(_glPreview.ClientSize.Width, _glPreview.ClientSize.Height)
+
+            ' Apply the currently selected shader + palette
+            _previewForm.SetShader(shaderName)
+            If cmbPal.SelectedIndex >= 0 Then
+                _previewForm.SetPalette(cmbPal.SelectedIndex)
+            End If
+
+            _previewReady = True
+            _previewTimer.Start()
+        Catch ex As Exception
+            ' If GL init fails, just leave the preview black
+            _previewReady = False
+        End Try
+    End Sub
+
+    ''' <summary>Called when the shader listbox selection changes.</summary>
+    Private Sub UpdatePreviewShader()
+        If Not _previewReady Then Return
+        Dim entry = SelectedEntry()
+        If entry Is Nothing Then Return
+        Try
+            _glPreview.MakeCurrent()
+            _previewForm.SetShader(entry.Name)
+        Catch
+            ' Swallow compile errors for invalid user shaders
+        End Try
+    End Sub
+
+    ''' <summary>Called when the palette combobox selection changes.</summary>
+    Private Sub UpdatePreviewPalette()
+        If Not _previewReady Then Return
+        If cmbPal.SelectedIndex < 0 Then Return
+        _previewForm.SetPalette(cmbPal.SelectedIndex)
     End Sub
 
     ' ============================================================
@@ -222,6 +325,15 @@ Public Class SettingsForm : Inherits Form
         RaiseEvent SettingsChanged()
         DialogResult = DialogResult.OK
         Close()
+    End Sub
+
+    ' ============================================================
+    '  CLEANUP
+    ' ============================================================
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        _previewTimer.Stop()
+        _previewReady = False
+        MyBase.OnFormClosing(e)
     End Sub
 
     Private Sub InitializeComponent()

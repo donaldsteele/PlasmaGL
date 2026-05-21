@@ -235,6 +235,19 @@ Public Class PlasmaForm : Inherits Form
         End If
     End Sub
 
+    ''' <summary>Recompile with a different shader (for preview use).</summary>
+    Public Sub SetShader(name As String)
+        GL.UseProgram(0)
+        GL.DeleteProgram(_shader)
+        _shader = CreateShader(ShaderLibrary.VertexSource, ShaderLibrary.GetShaderSource(name))
+        QueryUniformLocations()
+    End Sub
+
+    ''' <summary>Change palette index (for preview use).</summary>
+    Public Sub SetPalette(index As Integer)
+        _palette = index
+    End Sub
+
     Public Sub NewRandomSeed()
         _seed1 = ran.Next(1, 6)
         _seed2 = ran.Next(1, 6)
