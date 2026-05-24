@@ -1,0 +1,54 @@
+name: Build and Package Screensaver
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1
+
+    - name: Restore NuGet packages
+      run: nuget restore plasmagl.sln
+
+    - name: Build Solution
+      run: msbuild plasmagl.sln /p:Configuration=Release /p:Platform="Any CPU"
+
+    - name: Prepare Release Files
+      shell: powershell
+      run: |
+        # 1. Create a clean staging directory
+        New-Item -ItemType Directory -Force -Path .\staging
+        
+        # 2. Define the path to your compiled Release output
+        # Note: Change "plasmagl" to your actual project folder name if it differs from the solution name
+        $binPath = ".\plasmagl\bin\Release"
+        
+        # 3. Copy dependencies (.dll files) to staging
+        Get-ChildItem -Path $binPath -Filter *.dll | Copy-Item -Destination .\staging
+        
+        # 4. Copy the main .exe and rename it to .scr
+        # Note: Replace "plasmagl.exe" if your compiled output executable has a different name
+        Copy-Item -Path "$binPath\plasmagl.exe" -Destination ".\staging\plasmagl.scr"
+
+    - name: Create Zip Archive
+      shell: powershell
+      run: Compress-Archive -Path .\staging\* -DestinationPath .\plasmagl_screensaver.zip
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: plasmagl-screensaver-zip
+        path: plasmagl_screensaver.zip
